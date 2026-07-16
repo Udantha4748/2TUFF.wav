@@ -80,7 +80,12 @@ void scr_record(void)
         if (PRESSED(PSP_CTRL_LEFT))  g_app.rec_sel -= REC_VISIBLE;
         if (g_app.rec_sel < 0) g_app.rec_sel = 0;
         if (g_app.rec_sel > r->track_count - 1) g_app.rec_sel = r->track_count - 1;
-        if (PRESSED(PSP_CTRL_CROSS)) { start_play(g_app.rec_sel, 1, 1); return; }
+        if (PRESSED(PSP_CTRL_CROSS)) {
+            if (HELD(PSP_CTRL_LTRIGGER)) {
+                g_app.queue_index = g_app.rec_sel;
+                config_save();
+            } else { start_play(g_app.rec_sel, 1, 1); return; }
+        }
     }
 
     if (g_app.rec_sel < g_app.rec_top) g_app.rec_top = g_app.rec_sel;
@@ -132,5 +137,13 @@ void scr_record(void)
 
     snprintf(buf, sizeof(buf), "%02d/%02d", g_app.rec_sel + 1,
              r->track_count > 0 ? r->track_count : 0);
+    if (g_app.queue_index >= 0 && g_app.queue_index < r->track_count) {
+        char qbuf[24];
+        snprintf(qbuf, sizeof(qbuf), " NEXT %02d ", g_app.queue_index + 1);
+        int qw = text_w(F_SM, qbuf) + 10;
+        int qx = SCR_W - PAD - qw - 70;
+        ui_chip(F_SM, qx, FOOTER_TOP + (FOOTER_H - font_ch(F_SM)) / 2,
+                qbuf, TH.accent, TH.accent_ink);
+    }
     ui_footer(NULL, buf);
 }

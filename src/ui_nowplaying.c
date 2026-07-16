@@ -316,4 +316,11 @@ void scr_nowplaying(void)
 
     ui_meter(F_SM, PAD, y0 + 54, (SCR_W - 2 * PAD) / font_cw(F_SM),
              disp_prog, TH.accent, TH.meter_off);
+
+    /* show queued next track chip */
+    if (g_app.queue_index >= 0 && g_app.queue_index < r->track_count) {
+        char qbuf[48];
+        snprintf(qbuf, sizeof(qbuf), "NEXT: %s", r->tracks[g_app.queue_index].title);
+        text_put_clip(F_SM, PAD, y0 + 68, TH.accent, qbuf, SCR_W - 2 * PAD);
+    }
 }

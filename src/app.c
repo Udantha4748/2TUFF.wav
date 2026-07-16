@@ -161,7 +161,7 @@ static unsigned int rng_state = 0;
 static unsigned int rng_next(void)
 {
     if (rng_state == 0)
-        rng_state = (unsigned int)(g_app.time * 1000.0f) | 1u;
+        rng_state = (unsigned int)(g_app.time * 1000.0f + 1.0f) | 1u;
     rng_state ^= rng_state << 13;
     rng_state ^= rng_state >> 17;
     rng_state ^= rng_state << 5;
@@ -172,8 +172,14 @@ int next_track_index(int cur)
 {
     int n = g_app.rec ? g_app.rec->track_count : 0;
     if (n <= 1) return cur;
-    if (g_app.shuffle)
-        return (cur + 1 + (int)(rng_next() % (unsigned int)(n - 1))) % n;
+    if (g_app.shuffle) {
+        unsigned int r = rng_next();
+        /* rejection sampling: eliminate modulo bias for small n */
+        unsigned int limit = (unsigned int)(n - 1);
+        unsigned int max_valid = (unsigned int)(-1) - ((unsigned int)(-1) % limit);
+        while (r >= max_valid) r = rng_next();
+        return (cur + 1 + (int)(r % limit)) % n;
+    }
     return cur + 1;
 }
 
@@ -182,6 +188,14 @@ void handle_auto_advance(void)
     if (!audio_finished()) return;
     audio_clear_finished();
     if (!g_app.rec) return;
+
+    /* queue takes priority */
+    if (g_app.queue_index >= 0 && g_app.queue_index < g_app.rec->track_count) {
+        int qi = g_app.queue_index;
+        g_app.queue_index = -1;
+        start_play(qi, 0, 0);
+        return;
+    }
 
     if (g_app.shuffle && g_app.rec->track_count > 1) {
 
