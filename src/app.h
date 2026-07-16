@@ -37,6 +37,7 @@ typedef struct {
     float     l_replay_t;
 
     int       shuffle;
+    int       queue_index;   /* -1 = empty; else track index in g_app.rec */
 
 #if LYRICS_ENABLED
 

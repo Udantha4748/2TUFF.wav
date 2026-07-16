@@ -50,14 +50,18 @@ void config_load(void)
         text_set_face((FontFace)v);
     if (read_kv(buf, "cover=", &v))
         image_set_dither(v);
+    if (read_kv(buf, "shuffle=", &v))
+        g_app.shuffle = !!v;
+    if (read_kv(buf, "queue=", &v))
+        g_app.queue_index = v;
 }
 
 void config_save(void)
 {
     char buf[64];
-    int len = snprintf(buf, sizeof(buf), "theme=%d\nfont=%d\ncover=%d\n",
+    int len = snprintf(buf, sizeof(buf), "theme=%d\nfont=%d\ncover=%d\nshuffle=%d\nqueue=%d\n",
                        (int)theme_current(), (int)text_current_face(),
-                       image_dither());
+                       image_dither(), g_app.shuffle, g_app.queue_index);
     SceUID fd = sceIoOpen(g_cfg_path,
                           PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
 

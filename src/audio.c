@@ -36,6 +36,10 @@ static volatile int g_elapsed_ms = 0;
 static volatile int g_total_sec = 0;
 static volatile int g_finished = 0;
 
+/* 200ms fade-in at track start to avoid click/pop on play */
+#define FADE_MS 200
+static int g_fade_remaining = 0; /* stereo samples left to ramp */
+
 static unsigned char *g_mp3buf = NULL;
 static unsigned char *g_pcmbuf = NULL;
 
@@ -127,6 +131,7 @@ static void play_file(const char *path, int total)
     g_total_sec   = (total > 0) ? total : 0;
     g_elapsed_ms  = 0;
     g_finished    = 0;
+    g_fade_remaining = (rate > 0) ? FADE_MS * rate / 1000 : 0;
     g_state       = AUDIO_PLAYING;
     lock(); g_seek_req = 0; unlock();
 
@@ -195,6 +200,16 @@ static void play_file(const char *path, int total)
 
         /* Blocking is deliberate: it returns only once the hardware drains the
          * buffer, in real time, which paces the whole loop. Free clock. */
+        if (g_fade_remaining > 0) {
+            int fade_n = (g_fade_remaining < spc) ? g_fade_remaining : spc;
+            int i;
+            for (i = 0; i < fade_n; i++) {
+                int vol = PSP_AUDIO_VOLUME_MAX * (fade_n - i) / fade_n;
+                buf[i * 2]     = (short)((int)buf[i * 2]     * vol / PSP_AUDIO_VOLUME_MAX);
+                buf[i * 2 + 1] = (short)((int)buf[i * 2 + 1] * vol / PSP_AUDIO_VOLUME_MAX);
+            }
+            g_fade_remaining -= fade_n;
+        }
         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, buf);
 
         /* count samples, not wall-clock, so the timer tracks what actually played */

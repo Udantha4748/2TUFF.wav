@@ -20,6 +20,8 @@ static void scopy(char *dst, int sz, const char *src)
 
 static void path_join(char *out, int sz, const char *a, const char *b)
 {
+    int need = (int)strlen(a) + 1 + (int)strlen(b);
+    if (need >= sz) { out[0] = '\0'; return; }  /* would overflow: bail */
     snprintf(out, sz, "%s/%s", a, b);
 }
 
@@ -222,6 +224,16 @@ static void add_playlist_track(Record *r, const char *base_dir,
             *--e = '\0';
     }
     if (!line[0]) return;
+
+    /* reject paths with ".." to prevent directory traversal */
+    {
+        const char *p = line;
+        while (*p) {
+            if (p[0] == '.' && p[1] == '.' && (p[2] == '/' || p[2] == '\\' || p[2] == '\0'))
+                return;
+            p++;
+        }
+    }
 
     t = push_track(r);
     if (!t) return;

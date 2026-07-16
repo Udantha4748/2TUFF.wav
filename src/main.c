@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
     g_app.screen = SCREEN_LIBRARY;
     g_app.mode = MODE_ALBUMS;
     g_app.preview_for = -1;
+    g_app.queue_index = -1;
     library_scan(&g_app.lib, MUSIC_ROOT);
 
     while (g_running) {
